@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="">
+    <head>
+        <style>
+            #tableauViz {
+                width: 1200px;
+                height: 600px;
+                display: block;
+                
+            }
+        </style>
+        
+    </head>
+    <body>
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <!-- Add your site or application content here -->
+        <div id="tableauViz"></div>
+        
+        <button onclick="saveFilters()">Save</button>
+<button onclick="restoreFilters()">Restore</button>
+
+        <script src="//code.jquery.com/jquery-1.12.0.js"></script>
+        <script src="//public.tableau.com/javascripts/api/tableau-2.0.0.js"></script>
+        <script src="//underscorejs.org/underscore.js"></script>
+        
+        
+        <script>
+        
+        $(function(){
+        
+            function initializeViz() {
+                  var placeholderDiv = document.getElementById("tableauViz");
+                  var url = "http://public.tableau.com/views/WorldIndicators/GDPpercapita";
+                  var options = {
+                    width: placeholderDiv.offsetWidth,
+                    height: placeholderDiv.offsetHeight,
+                    hideTabs: true,
+                    hideToolbar: true,
+                    onFirstInteractive: function () {
+                        workbook = viz.getWorkbook();
+                        activeSheet = workbook.getActiveSheet();
+                        viz.addEventListener(tableau.TableauEventName.MARKS_SELECTION, onMarksSelection);
+                    }
+                  };
+                  viz = new tableau.Viz(placeholderDiv, url, options);
+            } 
+        
+            initializeViz();
+        
+        });
+        
+        var savedMarks = {};
+        
+        function saveFilters() {
+            console.log('here');
+            viz.getWorkbook()
+                .getActiveSheet()
+                .getFiltersAsync()
+                .then(function (marks) {
+                    console.log(marks);
+                    savedMarks=marks;
+                
+            })
+        }
+         
+            function restoreFilters() {
+            _.each(savedMarks, function(fltr){
+                switch(fltr.getFilterType()) {
+                    case "categorical":
+                        fltr
+                            .getWorksheet()
+                            .applyFilterAsync(fltr.getFieldName(), _.pluck(fltr.getAppliedValues(), 'value'), tableau.FilterUpdateType.REPLACE);
+
+            
+                }
+                
+            });
+            
+               
+            
+        }
+            
+        function restoreMarks() {
+            viz.getWorkbook()
+                .getActiveSheet()
+                .getMarkersAsync()
+                .then(function (marks) {
+                    var savedMarks = [];
+                    for (var markIndex = 0; markIndex < marks.length; markIndex++) {
+                        var pairs = marks[markIndex].getPairs();
+                        console.log(markIndex);
+                        for (var pairIndex = 0; pairIndex < pairs.length; pairIndex++) {
+                          var pair = pairs[pairIndex];
+                            savedMarks.push(pair);
+                            console.log(pair);
+                        }
+                    }
+                    
+            })
+        }
+            
+            
+        function onMarksSelection(marksEvent) {
+            return marksEvent.getMarksAsync().then(reportSelectedMarks);
+        }
+
+        function reportSelectedMarks(marks) {
+            var html = "";
+            console.log(marks);
+            
+            for (var markIndex = 0; markIndex < marks.length; markIndex++) {
+                var pairs = marks[markIndex].getPairs();
+                html += "<b>Mark " + markIndex + ":</b><ul>";
+
+                for (var pairIndex = 0; pairIndex < pairs.length; pairIndex++) {
+                    var pair = pairs[pairIndex];
+                    html += "<li><b>Field Name:</b> " + pair.fieldName;
+                    html += "<br/><b>Value:</b> " + pair.formattedValue + "</li>";
+                }
+
+                html += "</ul>";
+            }
+
+            var infoDiv = document.getElementById('markDetails');
+            infoDiv.innerHTML = html;
+        }
+
+        
+             
+        
+        </script>
+        
+    </body>
+</html>
